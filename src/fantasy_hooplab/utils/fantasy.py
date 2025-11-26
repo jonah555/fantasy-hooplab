@@ -49,7 +49,9 @@ def get_roster(league, roster_size, team_count):
     for rank, player_json in enumerate(data["players"]):
 
         player_id = player_json.get('id')
-        player_map.get(player_id).update_info(player_json)
+
+        if player_map.get(player_id):
+            player_map.get(player_id).update_info(player_json)
 
         if rank < rostered_size:
             top_players_map[player_id] = player_map.get(player_id)
@@ -192,6 +194,12 @@ def analyze_transaction(result, actions, player_map, team_map, counting_stats, p
     compute_teams_z_scores(team_map, player_map, categories, cat_index, mask, counting_stats, percentage_stats, roster_size)
 
     return plus, minus
+
+
+def reset_roster(team_map, player_map, categories, cat_index, mask, counting_stats, percentage_stats, roster_size):
+    for team in team_map.values():
+        team.reset_roster() 
+    compute_teams_z_scores(team_map, player_map, categories, cat_index, mask, counting_stats, percentage_stats, roster_size)    
 
 
 def build_matchup_scoring_period(league, all_star_week=17):
