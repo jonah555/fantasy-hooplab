@@ -34,7 +34,7 @@ python -m streamlit run src/fantasy_hooplab/main.py
     .../basketball/team?leagueId=XXXXXXXXX&teamId=...
     ```
 
-    The nine-digit number immediately following leagueId= is your unique ESPN Fantasy League ID.
+    The numbers XXXXXXXXX immediately following leagueId= is your unique ESPN Fantasy League ID.
 
     Example URL Snippet:
 
