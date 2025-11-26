@@ -15,18 +15,29 @@ def round_value(cat, val, is_z=False):
     return f"{val:.1f}"
 
 
-def make_h2h_most_df(team_map):
+def make_h2h_most_df(team_map, my_team_name):
     """Return DataFrame showing W-L-T and Win% for each team."""
     rows = []
+    my_team = next(t for t in team_map.values() if t.name == my_team_name)
+
     for t in team_map.values():
         h2h = t.h2h_most.get("total", {})
         result = h2h.get("result", "0-0-0")
         winpct = h2h.get("win%", 0)
-        rows.append({
+
+        result = {
             "Team": t.name,
             "Record": result,
-            "win%": round(winpct, 3),
-        })
+            "win%": round(winpct, 3)
+        }
+        if t.team_id != my_team.team_id:
+            matchup = my_team.h2h_most.get("total", {}).get(t.team_id, {})
+            result['Result'] = matchup.get('score', '-')
+            for cat in CATEGORIES:
+                result[cat] = matchup[cat]
+
+        rows.append(result)
+        
     df = pd.DataFrame(rows)
     return df
 
@@ -111,11 +122,11 @@ def show_teams(team_map, counting_stats, roster_size, trade):
     st.dataframe(team_df, width='stretch')
 
 
-def show_standings(team_map, trade):
+def show_standings(team_map, my_team):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🏆 League Standings H2H Most")
-        df_most = make_h2h_most_df(team_map).sort_values("win%", ascending=False)
+        df_most = make_h2h_most_df(team_map, my_team).sort_values("win%", ascending=False)
         st.dataframe(df_most, width='content')
     with col2:
         st.markdown("### 🏆 League Standings H2H Each")
@@ -243,14 +254,14 @@ def transaction_to_df(player_map, info, mode):
     return pd.DataFrame(rows)
 
 
-def show_trade(team_map, player_map, free_agents_map, counting_stats, percentage_stats, categories, cat_index, mask, roster_size):
+def show_trade(my_team, team_map, player_map, free_agents_map, counting_stats, percentage_stats, categories, cat_index, mask, roster_size):
     st.subheader("💼 Trade Analyzer")
     col1, col2, col3 = st.columns(3)
     # --- Team selectors ---
 
     team_names = [t.name for t in team_map.values()]
     with col1:
-        team1_name = st.selectbox("Select Team 1", team_names, key="trade_team1")
+        team1_name = st.selectbox("Select Team 1", team_names, key="trade_team1", index=team_names.index(my_team))
 
     with col2:
         team2_name = st.selectbox("Select Team 2", [n for n in team_names if n != team1_name], key="trade_team2")
@@ -392,6 +403,6 @@ def show_trade(team_map, player_map, free_agents_map, counting_stats, percentage
             st.dataframe(diff_avg_df, width='content')
 
         st.text("")
-        show_standings(team_map, '_t')
+        show_standings(team_map, team1.name)
         st.text("")
         show_teams(team_map, counting_stats, roster_size, '_t')

@@ -74,6 +74,7 @@ class Team():
             win = np.count_nonzero(diffs > 0)
             loss = np.count_nonzero(diffs < 0)
             matchup["result"] = int(win - loss)
+            matchup["score"] = f'{win}-{loss}'
 
             # Per-category W/L/T updates
             for index in CAT_INDEX:

@@ -100,8 +100,12 @@ with tab3:
 with tab4:
     st.header("Standings")
     if st.session_state.league:
-        team_map = st.session_state.team_map
-        render.show_standings(team_map, '')
+        if st.session_state.my_team:
+            team_map = st.session_state.team_map
+            my_team = st.session_state.my_team
+            render.show_standings(team_map, my_team)
+        else:
+            st.write("Please return to Home Page and select your team.")
     else:
         st.write("Please return to Home Page and connect to your league.")
 
@@ -122,11 +126,16 @@ with tab5:
 with tab6:
     st.header("Trade")
     if st.session_state.league:
-        team_map = st.session_state.team_map
-        player_map = st.session_state.player_map
-        free_agents_map = st.session_state.free_agents_map
+        if st.session_state.my_team:
+            team_map = st.session_state.team_map
+            player_map = st.session_state.player_map
+            free_agents_map = st.session_state.free_agents_map
+            my_team = st.session_state.my_team
 
-        render.show_trade(team_map, player_map, free_agents_map, COUNTING_STATS, PERCENTAGE_STATS, CATEGORIES, CAT_INDEX, MASK, ROSTER_SIZE)
+            render.show_trade(my_team, team_map, player_map, free_agents_map, COUNTING_STATS, PERCENTAGE_STATS, 
+                              CATEGORIES, CAT_INDEX, MASK, ROSTER_SIZE)
+        else:
+            st.write("Please return to Home Page and select your team.")
     else:
         st.write("Please return to Home Page and connect to your league.")
 
