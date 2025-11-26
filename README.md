@@ -1,22 +1,11 @@
-# FantasyHoopLab
-
-fantasy-hooplab/
-├── src/
-│   └── fantasy_hooplab/
-│       ├── main.py 
-│       └── utils/
-│           ├── team.py
-│           ├── player.py
-│           ├── fantasy.py
-│           └── render.py
-│       
-└── ...
+# 🏀 Fantasy HoopLab
 
 
+### 1. Clone & Install Python Dependencies
 
-### 1. Install Python Dependencies
-
+After you have cloned the repo:
 ```bash
+cd fantasy-hooplab
 pip install -r requirements.txt
 ```
 
@@ -40,19 +29,21 @@ python -m streamlit run src/fantasy_hooplab/main.py
 
 4. Look at the URL in your web browser's address bar.
 
-The URL will contain a section that looks like this:
+    The URL will contain a section that looks like this:
+    ```bash
+    .../league/team?leagueId=XXXXXXXXX&teamId=...
+    ```
 
-.../league/team?leagueId=XXXXXXXXX&teamId=...
+    The nine-digit number immediately following leagueId= is your unique ESPN Fantasy League ID.
 
-The nine-digit number immediately following leagueId= is your unique ESPN Fantasy League ID.
+    Example URL Snippet:
 
-Example URL Snippet:
+    https://fantasy.espn.com/football/league/team?leagueId=123456789&teamId=1
 
-https://fantasy.espn.com/football/league/team?leagueId=123456789&teamId=1
-In this example, the League ID is 123456789.
+    In this example, the League ID is 123456789.
 
-📱 On the Mobile App
-The mobile app does not easily display the ID. You will need to use a desktop or mobile web browser to access the full URL and find the ID.
+    📱 On the Mobile App
+    The mobile app does not easily display the ID. You will need to use a desktop or mobile web browser to access the full URL and find the ID.
 
 5. Copy and paste league ID in the Home Page to use Fantasy HoopLab, make sure the league is set to public if you do not have a subscribtion.
 
