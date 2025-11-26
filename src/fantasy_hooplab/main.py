@@ -23,13 +23,6 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Home", "Players", "Teams" ,"Stand
 
 if "league" not in st.session_state:
     st.session_state.league = None
-    st.session_state.team_map = None
-    st.session_state.player_map = None
-    st.session_state.free_agents_map = None
-    st.session_state.top_players_map = None
-    st.session_state.last_updated = None
-    st.session_state.my_team = None
-
 
 # 1. HOME
 with tab1:
@@ -46,16 +39,23 @@ with tab1:
         return league, team_map, player_map, free_agents_map, top_players_map
 
     if fetch_btn:
-        league, team_map, player_map, free_agents_map, top_players_map = load_league_data(
-            league_id, YEAR, ROSTER_SIZE, TEAM_COUNT
-        )
-
-        st.session_state.league = league
-        st.session_state.team_map = team_map
-        st.session_state.player_map = player_map
-        st.session_state.free_agents_map = free_agents_map
-        st.session_state.top_players_map = top_players_map
-        st.session_state.last_updated = pd.Timestamp.now()
+        for key in st.session_state.keys():
+            del st.session_state[key]
+        try:
+            league, team_map, player_map, free_agents_map, top_players_map = load_league_data(
+                league_id, YEAR, ROSTER_SIZE, TEAM_COUNT
+            )
+            st.session_state.league = league
+            st.session_state.team_map = team_map
+            st.session_state.player_map = player_map
+            st.session_state.free_agents_map = free_agents_map
+            st.session_state.top_players_map = top_players_map
+            st.session_state.last_updated = pd.Timestamp.now()
+            st.session_state.my_team = None
+        except:
+            st.write("Connection failed.")
+            st.session_state.league = None
+            
         
     if st.session_state.league:
         st.write("Successfully connected to ESPN Fantasy League!")
