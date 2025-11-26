@@ -45,7 +45,7 @@ python -m streamlit run src/fantasy_hooplab/main.py
     📱 On the Mobile App
     The mobile app does not easily display the ID. You will need to use a desktop or mobile web browser to access the full URL and find the ID.
 
-5. Copy and paste league ID in the Home Page to use Fantasy HoopLab, make sure the league is set to public if you do not have a subscribtion.
+5. Copy and paste league ID in the Home Page to use Fantasy HoopLab, make sure the league is set to public if you are using the free version.
 
 
 ### 4. Analysis
