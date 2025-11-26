@@ -114,15 +114,13 @@ def show_teams(team_map, counting_stats, roster_size, trade):
 def show_standings(team_map, trade):
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("### 🏆 League Standings")
+        st.markdown("### 🏆 League Standings H2H Most")
+        df_most = make_h2h_most_df(team_map).sort_values("win%", ascending=False)
+        st.dataframe(df_most, width='content')
     with col2:
-        stand_view = st.radio("View:", ["H2H Most", "H2H Each"], key=f"stand_view{trade}", horizontal=True)
-
-    if stand_view == "H2H Most":
-        df = make_h2h_most_df(team_map).sort_values("win%", ascending=False)
-    else:
-        df = make_h2h_each_df(team_map).sort_values("win%", ascending=False)
-    st.dataframe(df, width='stretch')
+        st.markdown("### 🏆 League Standings H2H Each")
+        df_each = make_h2h_each_df(team_map).sort_values("win%", ascending=False)
+        st.dataframe(df_each, width='content')
 
 
 def show_roster(team_map, player_map):
