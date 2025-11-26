@@ -1,21 +1,21 @@
 import streamlit as st
 import espn_api.basketball as api
-from src import fantasy
-from src.player import Player
-from src.team import Team
+from utils import fantasy
+from utils.player import Player
+from utils.team import Team
 import numpy as np
 import json
 import pandas as pd
 
 
-from src.fantasy import (
+from utils.fantasy import (
     compute_players_z_scores,
     compute_teams_z_scores,
     get_roster,
     analyze_transaction
 )
-from src.team import CATEGORIES
-from src.player import STATS_TYPES
+from utils.team import CATEGORIES
+from utils.player import STATS_TYPES
 
 # ----------------------------
 # Helper Functions
@@ -186,13 +186,13 @@ STATS_TYPES = ["projected", "total", "last_30", "last_15", "last_7"]
 
 # --- Fetch League Data ---
 @st.cache_data(show_spinner="Connecting to ESPN Fantasy League...")
-def load_league_data(league_id, year, swid, espn_s2, roster_size, team_count):
+def load_league_data(league_id, year, roster_size, team_count):
     league = api.League(league_id=league_id, year=year)
     team_map, player_map, free_agents_map, top_players_map = get_roster(league, roster_size, team_count)
     return league, team_map, player_map, free_agents_map, top_players_map
 
 league, team_map, player_map, free_agents_map, top_players_map = load_league_data(
-    LEAGUE_ID, YEAR, SWID, ESPN_S2, ROSTER_SIZE, TEAM_COUNT
+    LEAGUE_ID, YEAR, ROSTER_SIZE, TEAM_COUNT
 )
 
 # --- Compute stats + z-scores ---

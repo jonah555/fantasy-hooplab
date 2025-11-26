@@ -1,5 +1,5 @@
-from src.player import Player
-from src.team import Team
+from utils.player import Player
+from utils.team import Team
 import numpy as np
 import json
 from datetime import datetime
