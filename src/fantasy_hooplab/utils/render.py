@@ -371,21 +371,26 @@ def show_trade(team_map, player_map, free_agents_map, counting_stats, percentage
         minus_df = transaction_to_df(player_map, minus, view_mode)
 
         total_df, diff_df, avg_df, diff_avg_df = totals_and_avg(plus, minus, counting_stats)
+        st.text("")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"#### ⬆️ Players Gained ({team1_name})")
+            st.dataframe(plus_df, width='content')
+        with col2:
+            st.markdown(f"#### ⬇️ Players Lost ({team1_name})")
+            st.dataframe(minus_df, width='content')
+        st.text("")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("### 📊 Trade Summary (Totals)")
+            st.dataframe(total_df, width='content')
+            st.dataframe(diff_df, width='content')
+        with col2:
+            st.markdown("### 📊 Trade Summary (Averages)")
+            st.dataframe(avg_df, width='content')
+            st.dataframe(diff_avg_df, width='content')
 
-        st.markdown(f"#### ⬆️ Players Gained ({team1_name})")
-        st.dataframe(plus_df, width='stretch')
-        st.markdown(f"#### ⬇️ Players Lost ({team1_name})")
-        st.dataframe(minus_df, width='stretch')
-        
-
-        st.markdown("### 📊 Trade Summary (Totals)")
-        st.dataframe(total_df, width='stretch')
-        st.dataframe(diff_df, width='stretch')
-
-        st.markdown("### 📊 Trade Summary (Averages)")
-        st.dataframe(avg_df, width='stretch')
-        st.dataframe(diff_avg_df, width='stretch')
-
-
+        st.text("")
         show_standings(team_map, '_t')
+        st.text("")
         show_teams(team_map, counting_stats, roster_size, '_t')
