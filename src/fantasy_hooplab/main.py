@@ -114,10 +114,14 @@ with tab4:
 with tab5:
     st.header("Roster")
     if st.session_state.league:
-        team_map = st.session_state.team_map
-        player_map = st.session_state.player_map
+        if st.session_state.my_team:
+            team_map = st.session_state.team_map
+            player_map = st.session_state.player_map
+            my_team = st.session_state.my_team
 
-        render.show_roster(team_map, player_map)
+            render.show_roster(team_map, player_map, my_team)
+        else:
+            st.write("Please return to Home Page and select your team.")
     else:
         st.write("Please return to Home Page and connect to your league.")
 

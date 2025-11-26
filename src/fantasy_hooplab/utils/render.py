@@ -134,7 +134,7 @@ def show_standings(team_map, my_team):
         st.dataframe(df_each, width='content')
 
 
-def show_roster(team_map, player_map):
+def show_roster(team_map, player_map, my_team):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🧢 Team Roster Viewer")
@@ -142,9 +142,10 @@ def show_roster(team_map, player_map):
         roster_view = st.radio("View:", ["Stats", "Z-Scores"], key="roster_view", horizontal=True)
     view = roster_view
 
-    team_names = {t.name: t for t in team_map.values()}
-    selected_name = st.selectbox("Select team:", list(team_names.keys()))
-    team = team_names[selected_name]
+    temp = {t.name: t for t in team_map.values()}
+    team_names = list(temp.keys())
+    selected_name = st.selectbox("Select team:", team_names, index=team_names.index(my_team))
+    team = temp[selected_name]
 
     # Choose source
     is_z = view == "Z-Scores"
