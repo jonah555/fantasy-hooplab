@@ -29,21 +29,21 @@ python -m streamlit run src/fantasy_hooplab/main.py
 
 4. Look at the URL in your web browser's address bar.
 
-    The URL will contain a section that looks like this:
-    ```bash
-    .../league/team?leagueId=XXXXXXXXX&teamId=...
-    ```
+        The URL will contain a section that looks like this:
+        ```bash
+        .../basketball/team?leagueId=XXXXXXXXX&teamId=...
+        ```
 
-    The nine-digit number immediately following leagueId= is your unique ESPN Fantasy League ID.
+        The nine-digit number immediately following leagueId= is your unique ESPN Fantasy League ID.
 
-    Example URL Snippet:
+        Example URL Snippet:
 
-    https://fantasy.espn.com/football/league/team?leagueId=123456789&teamId=1
+        https://fantasy.espn.com/basketball/team?leagueId=1698612577&teamId=1
 
-    In this example, the League ID is 123456789.
+        In this example, the League ID is 123456789.
 
-    📱 On the Mobile App
-    The mobile app does not easily display the ID. You will need to use a desktop or mobile web browser to access the full URL and find the ID.
+        📱 On the Mobile App
+        The mobile app does not easily display the ID. You will need to use a desktop or mobile web browser to access the full URL and find the ID.
 
 5. Copy and paste league ID in the Home Page to use Fantasy HoopLab, make sure the league is set to public if you do not have a subscribtion.
 
@@ -60,13 +60,15 @@ python -m streamlit run src/fantasy_hooplab/main.py
 
 ### 5. TO DO 
 
-1. update categories order
-2. add ORIGINAL standing projection after trade analysis
-3. add stats splits control, it is only using 2026 season total stats for now
-4. add a ranking function with punting categories functionality => show players table based on ranking
-5. add scaling color from green to no color to red to all stats, green as above avg, red as below avg using z scores
-6. add position filter using player.eligible_slots
-7. add match up page and utils/fantasy functions
-8. update get_roster because I need to add schedule to all players, now only roster players have schedule
+0. fix sorting problem (11 is currently smaller than 8)
+1. players lost shouldn't have included Free Agents
+2. update categories order
+3. add ORIGINAL standing projection after trade analysis
+4. add stats splits control, it is only using 2026 season total stats for now
+5. add a ranking function with punting categories functionality => show players table based on ranking
+6. add scaling color from green to no color to red to all stats, green as above avg, red as below avg using z scores
+7. add position filter using player.eligible_slots
+8. add match up page and utils/fantasy functions
+9. update get_roster because I need to add schedule to all players, now only roster players have schedule
 
-11/25/2025
+2025/11/26

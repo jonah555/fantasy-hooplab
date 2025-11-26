@@ -369,6 +369,7 @@ def show_trade(team_map, player_map, free_agents_map, counting_stats, percentage
         view_mode = st.session_state.trade_view
         plus_df = transaction_to_df(player_map, plus, view_mode)
         minus_df = transaction_to_df(player_map, minus, view_mode)
+        # bug: minus shouldn't have included Free Agents
 
         total_df, diff_df, avg_df, diff_avg_df = totals_and_avg(plus, minus, counting_stats)
         st.text("")

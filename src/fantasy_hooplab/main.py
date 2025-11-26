@@ -7,8 +7,6 @@ from utils import fantasy, render
 YEAR = 2026
 ROSTER_SIZE = 13
 TEAM_COUNT = 10
-
-# Categories (9CAT)
 CATEGORIES = ["FG%", "FT%", "3PM", "REB", "AST", "STL", "BLK", "TO", "PTS"]
 CAT_INDEX = np.arange(len(CATEGORIES))
 COUNTING_STATS = ["PTS", "3PM", "REB", "AST", "STL", "BLK", "TO", "FGM", "FGA", "FTM", "FTA"]
@@ -29,6 +27,8 @@ if "league" not in st.session_state:
     st.session_state.player_map = None
     st.session_state.free_agents_map = None
     st.session_state.top_players_map = None
+    st.session_state.last_updated = None
+    st.session_state.my_team = None
 
 
 # 1. HOME
@@ -55,15 +55,24 @@ with tab1:
         st.session_state.player_map = player_map
         st.session_state.free_agents_map = free_agents_map
         st.session_state.top_players_map = top_players_map
+        st.session_state.last_updated = pd.Timestamp.now()
+        
+    if st.session_state.league:
+        st.write("Successfully connected to ESPN Fantasy League!")
+        fantasy.compute_players_z_scores(st.session_state.player_map, st.session_state.top_players_map, CATEGORIES, CAT_INDEX, MASK)
+        fantasy.compute_teams_z_scores(st.session_state.team_map, st.session_state.player_map, CATEGORIES, CAT_INDEX, MASK, 
+                                       COUNTING_STATS, PERCENTAGE_STATS, ROSTER_SIZE)
+        st.caption(f"Last updated: {st.session_state.last_updated.strftime('%Y-%m-%d %H:%M:%S')}")
+        st.write('')
+        team_names = [t.name for t in st.session_state.team_map.values()]
+        my_team = st.selectbox("Select Your Team", team_names, key="user_team")
+        my_team_btn = st.button("Save")
+        if my_team_btn:
+            st.session_state.my_team = my_team
+    else:
+        st.write("Please make sure your league is set to public and league ID is correct.")
 
-        if league:
-            st.write("Successfully connected to ESPN Fantasy League!")
-            fantasy.compute_players_z_scores(player_map, top_players_map, CATEGORIES, CAT_INDEX, MASK)
-            fantasy.compute_teams_z_scores(team_map, player_map, CATEGORIES, CAT_INDEX, MASK, COUNTING_STATS, PERCENTAGE_STATS, ROSTER_SIZE)
-        else:
-            st.write("Please make sure your league is set to public or make sure league ID is correct.")
-
-        st.caption(f"Last updated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
 
 # 2. Players
 with tab2:
