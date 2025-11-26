@@ -46,12 +46,7 @@ def make_h2h_each_df(team_map):
             row[cat] = f"{wlt[0]}-{wlt[1]}-{wlt[2]}"
         rows.append(row)
     df = pd.DataFrame(rows)
-    return df
-
-
-def show_team_roster(team_map, player_map, view="Stats"):
-    """Display one team's roster with Stats or Z-Scores view."""
-    
+    return df    
 
 
 def show_players(player_map, team_map):
