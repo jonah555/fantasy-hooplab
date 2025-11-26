@@ -60,8 +60,6 @@ with tab1:
             st.write("Successfully connected to ESPN Fantasy League!")
             fantasy.compute_players_z_scores(player_map, top_players_map, CATEGORIES, CAT_INDEX, MASK)
             fantasy.compute_teams_z_scores(team_map, player_map, CATEGORIES, CAT_INDEX, MASK, COUNTING_STATS, PERCENTAGE_STATS, ROSTER_SIZE)
-            for t in team_map.values():
-                t.get_record(team_map, CATEGORIES)
         else:
             st.write("Please make sure your league is set to public or make sure league ID is correct.")
 
