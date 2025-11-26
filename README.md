@@ -60,11 +60,13 @@ python -m streamlit run src/fantasy_hooplab/main.py
 
 ### 5. TO DO 
 
-1. add stats splits control, it is only using 2026 season total stats for now
-2. add a ranking function with punting categories functionality => show players table based on ranking
-3. add scaling color from red to no color to red to all stats, greem as above avg, red as below avg using z scores
-4. add position filter, and I need to use player.eligible_slots
-5. add match up page
-6. update get_roster because I need to add schedule to all players, now only roster players have schedule
+1. update categories order
+2. add standing projection update after trade analysis
+2. add stats splits control, it is only using 2026 season total stats for now
+3. add a ranking function with punting categories functionality => show players table based on ranking
+4. add scaling color from red to no color to red to all stats, greem as above avg, red as below avg using z scores
+5. add position filter, and I need to use player.eligible_slots
+6. add match up page
+7. update get_roster because I need to add schedule to all players, now only roster players have schedule
 
 11/25/2025
