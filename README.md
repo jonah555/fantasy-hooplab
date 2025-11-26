@@ -40,7 +40,7 @@ python -m streamlit run src/fantasy_hooplab/main.py
 
     https://fantasy.espn.com/basketball/team?leagueId=1698612577&teamId=1
 
-    In this example, the League ID is 123456789.
+    In this example, the League ID is 1698612577.
 
     📱 On the Mobile App
     The mobile app does not easily display the ID. You will need to use a desktop or mobile web browser to access the full URL and find the ID.
