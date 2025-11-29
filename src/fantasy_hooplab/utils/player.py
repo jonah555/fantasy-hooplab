@@ -1,4 +1,15 @@
 STATS_TYPES = ["projected", "total", "last_30", "last_15", "last_7"]
+RATING_CATS = ["PTS", "3PM", "AST", "STL", "FT%", 'FG%', 'BLK', "REB"]
+CRITERIAS = {
+    "PTS" : [23, 18, 14, 10], 
+    "3PM" : [2.8, 2, 1.3, 0.4], 
+    "AST" : [6.2, 4.3, 3, 1.8], 
+    "STL" : [1.5, 1.2, 0.9, 0.7], 
+    "FT%" : [.87, .83, .78, .75], 
+    'FG%' : [.54, .5, .46, .43], 
+    'BLK' : [1.3, 0.8, 0.5, 0.3], 
+    "REB" : [8.5, 6, 4.8, 3.5]
+}
 
 class Player:
     def __init__(self, player):
@@ -25,10 +36,27 @@ class Player:
 
         self.stats = {}
         self.stats_z = {}
+        
+        self.ratings = {}
 
         data = player.stats or {}
         for stype in STATS_TYPES:
             self.stats[stype] = data.get(f"{player.year}_{stype}", {}).get("avg", {})
+            self.ratings[stype] = {cat : 0 for cat in RATING_CATS}
+
+            for cat in RATING_CATS:
+                stat = self.stats[stype].get(cat, 0)
+                self.ratings[stype][cat] = self.rate_category(stat, cat)
+
+    
+    def rate_category(self, stat, category):
+        index = 0
+        criteria = CRITERIAS.get(category)
+        while index < len(criteria):
+            if (stat >= criteria[index]):
+                break
+            index += 1
+        return 5 - index
 
 
     def update_info(self, player_json):

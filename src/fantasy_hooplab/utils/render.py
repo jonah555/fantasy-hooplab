@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
+from utils.player import RATING_CATS
 from utils.team import CATEGORIES
 from utils import fantasy
 
@@ -60,7 +62,123 @@ def make_h2h_each_df(team_map):
     return df    
 
 
-def show_players(player_map, team_map):
+def get_position_color(position):
+    """Returns line_color and fillcolor based on position"""
+    colors = {
+        'PG': {
+            'line': '#EF5350',  # Red
+            'fill': 'rgba(239, 83, 80, 0.3)'
+        },
+        'SG': {
+            'line': '#FFA726',  # Orange
+            'fill': 'rgba(255, 167, 38, 0.3)'
+        },
+        'SF': {
+            'line': '#66BB6A',  # Green
+            'fill': 'rgba(102, 187, 106, 0.3)'
+        },
+        'PF': {
+            'line': '#1f77b4',  # Blue (the one you liked)
+            'fill': 'rgba(31, 119, 180, 0.3)'
+        },
+        'C': {
+            'line': '#AB47BC',  # Purple
+            'fill': 'rgba(171, 71, 188, 0.3)'
+        }
+    }
+    return colors.get(position, colors['PF'])  # Default to blue if position not found
+
+
+def create_radar(player_name, stats, position):
+    # Define categories in clockwise order starting from 12 o'clock
+    categories = RATING_CATS
+    
+    # Get values in the same order
+    values = [stats.get(cat, 0) for cat in categories]
+    
+    # Close the loop by adding the first value at the end
+    values_closed = values + [values[0]]
+    categories_closed = categories + [categories[0]]
+
+    # Get colors based on position
+    colors = get_position_color(position)
+    
+    fig = go.Figure(data=go.Scatterpolar(
+        r=values_closed,
+        theta=categories_closed,
+        fill='toself',
+        line_color=colors['line'],
+        fillcolor=colors['fill'],
+        line_width=2
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 5],
+                tickmode='array',
+                tickvals=[1, 2, 3, 4, 5],
+                showticklabels=False,
+                gridcolor='#444444',  # Darker grid lines
+                tickfont=dict(color='#CCCCCC')  # Light text for ticks
+            ),
+            angularaxis=dict(
+                direction='clockwise',
+                period=8,
+                gridcolor='#444444',  # Darker grid lines
+                tickfont=dict(color='#CCCCCC')  # Light text for labels
+            ),
+            bgcolor='#1E1E1E'  # Dark background for the polar area
+        ),
+        showlegend=False,
+        height=400,
+        margin=dict(l=80, r=80, t=80, b=80),
+        title=dict(text=f"{player_name}", x=0.5, xanchor='center', font=dict(color='#CCCCCC')),
+        paper_bgcolor='#0E1117',  # Dark background for entire chart (matches Streamlit dark theme)
+        plot_bgcolor='#0E1117'  # Dark background for plot area
+    )
+    
+    return fig
+
+
+def show_players(player_map, team_map, ratings):
+
+    # Then add a search/filter for radar charts
+    st.markdown("### 📊 View Player Radar Chart")
+
+    # Dropdown to select player
+    selected_player_name = st.selectbox(
+        "Select a player to view their radar chart:",
+        options=[p.name for p in player_map.values()],
+        key="player_select"
+    )
+
+    # Find the selected player
+    selected_player = next((p for p in player_map.values() if p.name == selected_player_name), None)
+
+    if selected_player:
+        rating = selected_player.ratings['total']
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.plotly_chart(create_radar(f'{selected_player.name} ({selected_player.position})', rating, selected_player.position), 
+                            width='stretch')
+        
+        with col2:
+            st.subheader("Stats Breakdown")
+            cola, colb, colc = st.columns(3)
+            with cola:
+                for cat in ["PTS", "REB", "AST"]:
+                    st.metric(cat, ratings.get(rating.get(cat, 0)))
+            with colb:
+                for cat in ["3PM", "STL", "BLK"]:
+                    st.metric(cat, ratings.get(rating.get(cat, 0)))
+            with colc:
+                for cat in ["FG%", "FT%"]:
+                    st.metric(cat, ratings.get(rating.get(cat, 0)))
+
+
     # col1, col2, col3 = st.columns(3)
     col1, col2 = st.columns(2)
 

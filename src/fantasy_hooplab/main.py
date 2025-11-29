@@ -14,12 +14,13 @@ PERCENTAGE_STATS = ["FG", "FT"]
 NEGATIVE_STATS = ["TO"]
 MASK = np.array([cat in NEGATIVE_STATS for cat in CATEGORIES])
 STATS_TYPES = ["projected", "total", "last_30", "last_15", "last_7"]
+RATINGS = {5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D'}
 
 
 st.set_page_config(page_title="Fantasy HoopLab", layout="wide")
 st.title("🏀 Fantasy HoopLab")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Home", "Players", "Teams" ,"Standings", "Roster", "Trade"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Home", "Players", "Teams" ,"Standings", "Roster", "Trade", "Matchup"])
 
 if "league" not in st.session_state:
     st.session_state.league = None
@@ -80,7 +81,7 @@ with tab2:
     if st.session_state.league:
         team_map = st.session_state.team_map
         player_map = st.session_state.player_map
-        render.show_players(player_map, team_map)
+        render.show_players(player_map, team_map, RATINGS)
     else:
         st.write("Please return to Home Page and connect to your league.")
         
@@ -145,4 +146,19 @@ with tab6:
 
 
 
+# 7. Matchup
+with tab7:
+    st.header("Matchup")
+    if st.session_state.league:
+        if st.session_state.my_team:
+            team_map = st.session_state.team_map
+            player_map = st.session_state.player_map
+            free_agents_map = st.session_state.free_agents_map
+            my_team = st.session_state.my_team
+
+            st.write("Coming soon......")
+        else:
+            st.write("Please return to Home Page and select your team.")
+    else:
+        st.write("Please return to Home Page and connect to your league.")
 

@@ -79,7 +79,7 @@ class Team():
             # Per-category W/L/T updates
             for index in CAT_INDEX:
                 cat = categories[index]
-                matchup[cat] = diffs[index]  # overwrite value, no new key
+                matchup[cat] = round(diffs[index], 2)  # overwrite value, no new key
 
                 if diffs[index] > 0:
                     self.h2h_each[stype][cat][0] += 1; total_each[stype][0] += 1
