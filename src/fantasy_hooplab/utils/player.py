@@ -1,5 +1,5 @@
 STATS_TYPES = ["projected", "total", "last_30", "last_15", "last_7"]
-RATING_CATS = ["PTS", "3PM", "AST", "STL", "FT%", 'FG%', 'BLK', "REB"]
+RATING_CATS = ["PTS", "FT%", "AST", "STL", "3PM", 'BLK', "REB", 'FG%']
 CRITERIAS = {
     "PTS" : [23, 18, 14, 10], 
     "3PM" : [2.8, 2, 1.3, 0.4], 

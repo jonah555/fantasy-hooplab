@@ -62,6 +62,7 @@ def make_h2h_each_df(team_map):
     return df    
 
 
+# --- Helper: 
 def get_position_color(position):
     """Returns line_color and fillcolor based on position"""
     colors = {
@@ -89,6 +90,7 @@ def get_position_color(position):
     return colors.get(position, colors['PF'])  # Default to blue if position not found
 
 
+# --- Helper: 
 def create_radar(player_name, stats, position):
     # Define categories in clockwise order starting from 12 o'clock
     categories = RATING_CATS
@@ -134,7 +136,7 @@ def create_radar(player_name, stats, position):
         showlegend=False,
         height=400,
         margin=dict(l=80, r=80, t=80, b=80),
-        title=dict(text=f"{player_name}", x=0.5, xanchor='center', font=dict(color='#CCCCCC')),
+        title=dict(text=f"{player_name} ({position})", x=0.5, xanchor='center', font=dict(color='#CCCCCC')),
         paper_bgcolor='#0E1117',  # Dark background for entire chart (matches Streamlit dark theme)
         plot_bgcolor='#0E1117'  # Dark background for plot area
     )
@@ -162,8 +164,7 @@ def show_players(player_map, team_map, ratings):
         col1, col2 = st.columns(2)
         
         with col1:
-            st.plotly_chart(create_radar(f'{selected_player.name} ({selected_player.position})', rating, selected_player.position), 
-                            width='stretch')
+            st.plotly_chart(create_radar(selected_player.name, rating, selected_player.position), width='stretch')
         
         with col2:
             st.subheader("Stats Breakdown")
