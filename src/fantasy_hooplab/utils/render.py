@@ -153,7 +153,7 @@ def show_radar_charts(players, ratings):
     selected_player_name = st.selectbox(
         "Select a player to view their radar chart:",
         options=[p.name for p in players.values()],
-        key="player_select"
+        # key="player_select"
     )
 
     # Find the selected player
@@ -181,13 +181,23 @@ def show_radar_charts(players, ratings):
 
 
 def show_players(player_map, team_map):
-
+    st.markdown("### 🧍 Player Stats (total)")
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.markdown("### 🧍 Player Stats (total)")
-    with col2:
         player_view = st.radio("View:", ["Stats", "Z-Scores"], key="player_view", horizontal=True)
+    with col2:
+        
+        ownderships = ['All', 'Free Agents']
+        for t in team_map.values():
+            ownderships.append(t.name)
+        ownderships.append("Free Agents")
+        ownership_filter = st.selectbox(
+            "Ownership:",
+            ownderships,
+            index=ownderships.index('All'),  # no punting default
+            key="ownership_filter"
+        )
     with col3:
         punt_cats = st.multiselect(
             "Select categories to punt:",
@@ -213,6 +223,14 @@ def show_players(player_map, team_map):
 
         if p.position not in position_filter:
             continue  # Skip this player if position not selected
+        if ownership_filter != 'All':
+            if ownership_filter == 'Free Agents':
+                if p.on_team_id != 0:
+                    continue
+            else:
+                team = next((t for t in team_map.values() if t.name == ownership_filter), None)
+                if not team or p.on_team_id != team.team_id:
+                    continue
         
         ownership = (
             team_map[p.on_team_id].name if p.on_team_id in team_map
@@ -320,8 +338,8 @@ def show_roster(team_map, player_map, my_team_id, ratings):
 
     roster_df = pd.DataFrame(roster_rows)
     st.dataframe(roster_df, width='stretch', height=len(roster_df) * 35 + 38)
-
-    # show_radar_charts(players, ratings)
+    st.write("")
+    show_radar_charts(players, ratings)
 
 
 # --- Helper: Compute Totals, Averages, and Differences ---
