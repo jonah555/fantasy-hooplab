@@ -1,3 +1,6 @@
+from datetime import datetime
+from espn_api.basketball.constant import PRO_TEAM_MAP
+
 STATS_TYPES = ["projected", "total", "last_30", "last_15", "last_7"]
 RATING_CATS = ["PTS", "FT%", "AST", "STL", "3PM", 'BLK', "REB", 'FG%']
 CRITERIAS = {
@@ -10,6 +13,7 @@ CRITERIAS = {
     'BLK' : [1.3, 0.8, 0.5, 0.3], 
     "REB" : [8.5, 6, 4.8, 3.5]
 }
+
 
 class Player:
     def __init__(self, player):
@@ -59,7 +63,7 @@ class Player:
         return 5 - index
 
 
-    def update_info(self, player_json):
+    def update_info(self, player_json, pro_team_schedule):
 
         self.on_team_id = player_json.get("onTeamId", 0)
         self.status = player_json.get("status", "UNKNOWN")  # "FREEAGENT" or "WAIVERS"
@@ -71,4 +75,11 @@ class Player:
         ownership = info.get("ownership", {})
         self.avg_draft_pos = ownership.get("averageDraftPosition")
         self.percent_owned = ownership.get("percentOwned")
-        
+
+        if len(self.schedule) == 0:
+            pro_team_id = info.get("proTeamId")
+            pro_team = pro_team_schedule.get(pro_team_id, {})
+            for key in pro_team:
+                game = pro_team[key][0]
+                team = game['awayProTeamId'] if game['awayProTeamId'] != pro_team_id else game['homeProTeamId']
+                self.schedule[key] = { 'team': PRO_TEAM_MAP[team], 'date': datetime.fromtimestamp(game['date']/1000.0) }

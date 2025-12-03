@@ -2,7 +2,7 @@ from utils.player import Player
 from utils.team import Team
 import numpy as np
 import json
-from datetime import datetime
+# from datetime import datetime, timedelta
 
 
 STATS_TYPES = ["projected", "total", "last_30", "last_15", "last_7"]
@@ -51,7 +51,7 @@ def get_roster(league, roster_size, team_count):
         player_id = player_json.get('id')
 
         if player_map.get(player_id):
-            player_map.get(player_id).update_info(player_json)
+            player_map.get(player_id).update_info(player_json, league.pro_schedule)
 
         if rank < rostered_size:
             top_players_map[player_id] = player_map.get(player_id)
@@ -216,52 +216,54 @@ def build_matchup_scoring_period(league, all_star_week=17):
     return matchup_map 
 
 
-def count_games(players, player_map, scoring_period):
+def get_box_score(team_id, current_matchup_period, team_map):
+
+    my_team = team_map.get(team_id)
+    matchup = my_team.schedule[current_matchup_period - 1] # my_team.schedule starts index 0
+    
+    
+    all_categories = matchup.home_team_cats.keys()
+    box_score = {cat : 0 for cat in all_categories}
+
+    home = team_id == matchup.home_team.team_id
+    
+    for cat in all_categories:
+        if home:
+            box_score[cat] = matchup.home_team_cats.get(cat, {}).get('score', 0)
+        else:
+            box_score[cat] = matchup.away_team_cats.get(cat, {}).get('score', 0)
+
+    return box_score
+
+
+def count_games(players, player_map, scoring_period, today):
     # helper
     games = {player_id : {} for player_id in players}
     for player_id in players:
         player = player_map.get(player_id)
         for day in scoring_period:
-            if f'{day}' in player.schedule:
+            if day >= today and f'{day}' in player.schedule: # and player.schedule.get(f'{day}').get('date') >= datetime.now() - timedelta(hours=2, minutes=30):
                 games[player_id][day] = player.schedule.get(f'{day}')
 
     return games
 
 
-def get_matchup(team_id, current_matchup_period, team_map, matchup_map, player_map, free_agents_map):
-
-    my_team = team_map.get(team_id)
-    matchup = my_team.schedule[current_matchup_period - 1] # my_team.schedule starts index 0
-
-    home_team = team_map.get(matchup.home_team.team_id)
-    away_team = team_map.get(matchup.away_team.team_id)
-
+def get_matchup(team_id, opponent_id, current_matchup_period, league, team_map, matchup_map, player_map, free_agents_map):
     scoring_period = matchup_map.get(f'{current_matchup_period}')
+    today = league.scoringPeriodId
+    team_games = count_games(team_map.get(team_id).roster, player_map, scoring_period, today)
+    opponent_games = count_games(team_map.get(opponent_id).roster, player_map, scoring_period, today)
+    free_agents_games = count_games(free_agents_map, player_map, scoring_period, today)
 
-    home_games = count_games(home_team.roster, player_map, scoring_period)
-    away_games = count_games(away_team.roster, player_map, scoring_period)
-    free_agents_games = count_games(free_agents_map, player_map, scoring_period)
-
-    all_categories = matchup.home_team_cats.keys()
-
-    home_box_score = {cat : 0 for cat in all_categories}
-    away_box_score = {cat : 0 for cat in all_categories}
-
-    for cat in all_categories:
-        home_box_score[cat] = matchup.home_team_cats.get(cat, {}).get('score', 0)
-        away_box_score[cat] = matchup.away_team_cats.get(cat, {}).get('score', 0)
-
-    return home_games, 0, away_games, 0, free_agents_games, home_box_score, away_box_score
+    return team_games, opponent_games, free_agents_games
 
 
-def sum_projections(games, box_score, today, counting_stats, percentage_stats, player_map):
+def sum_projections(games, box_score, counting_stats, percentage_stats, player_map):
     # helper
     projections = {stype : box_score.copy() for stype in STATS_TYPES}
 
     for player_id, days in games.items():
         for day in days:
-            if day < today or days.get(day).get('date') < datetime.now():
-                continue
             player = player_map[player_id]
             for stype in STATS_TYPES:
                 for cat in counting_stats:
@@ -277,23 +279,52 @@ def sum_projections(games, box_score, today, counting_stats, percentage_stats, p
     return projections
 
 
-def get_matchup_projections(home_games, away_games, home_box_score, away_box_score, categories, counting_stats, percentage_stats, 
-                            home_team_id, my_team_id, today, player_map):
+def analyze_matchup(team_games, opponent_games, team_box_score, opponent_box_score, categories, counting_stats, percentage_stats, player_map):
 
-    home_projections = sum_projections(home_games, home_box_score, today, counting_stats, percentage_stats, player_map)
-    away_projections = sum_projections(away_games, away_box_score, today, counting_stats, percentage_stats, player_map)
+    team_projections = sum_projections(team_games, team_box_score, counting_stats, percentage_stats, player_map)
+    opponent_projections = sum_projections(opponent_games, opponent_box_score, counting_stats, percentage_stats, player_map)
 
     result = {stype: {cat: 0 for cat in categories} for stype in STATS_TYPES}
 
-    home_team = home_team_id == my_team_id
-
     for stype in STATS_TYPES:
         for cat in categories:
-            if home_team:
-                result[stype][cat] = home_projections[stype][cat] - away_projections[stype][cat]
-            else:
-                result[stype][cat] = away_projections[stype][cat] - home_projections[stype][cat]
+            result[stype][cat] = team_projections[stype][cat] - opponent_projections[stype][cat]
 
-    return result, home_projections, away_projections, home_team
+    return result, team_projections, opponent_projections
 
 
+def ranking_with_punting(player_map, categories, punting_cats):
+    result = {}
+    
+    for stype in STATS_TYPES:
+        players_data = []
+        
+        for player_id, player in player_map.items():
+            # Get z-scores for this stat type
+            z_scores = player.stats_z.get(stype, {})
+            
+            # Calculate punted value (sum of z-scores excluding punting_cats)
+            punted_value = sum(
+                z_scores.get(cat, 0) 
+                for cat in categories 
+                if cat not in punting_cats
+            )
+            
+            players_data.append({
+                'rank' : 0,
+                'player_id': player_id,
+                'name': player.name,
+                'punted_value': punted_value,
+                # 'stats_z': z_scores.copy()  # Include all z-scores
+            })
+        
+        # Sort by punted_value descending (highest first)
+        players_data.sort(key=lambda x: x['punted_value'], reverse=True)
+        
+        # Add ranking
+        for rank, player_data in enumerate(players_data, start=1):
+            player_data['rank'] = rank
+        
+        result[stype] = players_data
+    
+    return result

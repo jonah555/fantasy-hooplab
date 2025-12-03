@@ -20,7 +20,7 @@ RATINGS = {5: 'S', 4: 'A', 3: 'B', 2: 'C', 1: 'D'}
 st.set_page_config(page_title="Fantasy HoopLab", layout="wide")
 st.title("🏀 Fantasy HoopLab")
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Home", "Players", "Teams" ,"Standings", "Roster", "Trade", "Matchup"])
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs(["Home", "Players", "Teams" ,"Standings", "Roster", "Chart", "Trade", "Matchup"])
 
 if "league" not in st.session_state:
     st.session_state.league = None
@@ -52,7 +52,7 @@ with tab1:
             st.session_state.free_agents_map = free_agents_map
             st.session_state.top_players_map = top_players_map
             st.session_state.last_updated = pd.Timestamp.now()
-            st.session_state.my_team = None
+            st.session_state.my_team_id = None
         except:
             st.write("Connection failed.")
             st.session_state.league = None
@@ -65,11 +65,12 @@ with tab1:
                                        COUNTING_STATS, PERCENTAGE_STATS, ROSTER_SIZE)
         st.caption(f"Last updated: {st.session_state.last_updated.strftime('%Y-%m-%d %H:%M:%S')}")
         st.write('')
-        team_names = [t.name for t in st.session_state.team_map.values()]
-        my_team = st.selectbox("Select Your Team", team_names, key="user_team")
-        my_team_btn = st.button("Save")
-        if my_team_btn:
-            st.session_state.my_team = my_team
+
+        team_names = {t.team_id: t.name for t in st.session_state.team_map.values()}
+        my_team_id = st.selectbox("Select Your Team", options=list(team_names.keys()), format_func=lambda tid: team_names[tid])
+        my_team_id_btn = st.button("Save")
+        if my_team_id_btn:
+            st.session_state.my_team_id = my_team_id
     else:
         st.write("Please make sure your league is set to public and league ID is correct.")
 
@@ -81,7 +82,7 @@ with tab2:
     if st.session_state.league:
         team_map = st.session_state.team_map
         player_map = st.session_state.player_map
-        render.show_players(player_map, team_map, RATINGS)
+        render.show_players(player_map, team_map)
     else:
         st.write("Please return to Home Page and connect to your league.")
         
@@ -101,10 +102,10 @@ with tab3:
 with tab4:
     st.header("Standings")
     if st.session_state.league:
-        if st.session_state.my_team:
+        if st.session_state.my_team_id:
             team_map = st.session_state.team_map
-            my_team = st.session_state.my_team
-            render.show_standings(team_map, my_team)
+            my_team_id = st.session_state.my_team_id
+            render.show_standings(team_map, my_team_id)
         else:
             st.write("Please return to Home Page and select your team.")
     else:
@@ -115,29 +116,40 @@ with tab4:
 with tab5:
     st.header("Roster")
     if st.session_state.league:
-        if st.session_state.my_team:
+        if st.session_state.my_team_id:
             team_map = st.session_state.team_map
             player_map = st.session_state.player_map
-            my_team = st.session_state.my_team
-
-            render.show_roster(team_map, player_map, my_team)
+            my_team_id = st.session_state.my_team_id
+            render.show_roster(team_map, player_map, my_team_id, RATINGS)
         else:
             st.write("Please return to Home Page and select your team.")
     else:
         st.write("Please return to Home Page and connect to your league.")
 
 
-# 6. Trade
+# 6. Chart
 with tab6:
+    st.header("Chart")
+    if st.session_state.league:
+        player_map = st.session_state.player_map
+        rankings = fantasy.ranking_with_punting(player_map, CATEGORIES, [])
+        stype = st.selectbox("Select Stats Type", options=STATS_TYPES, index=STATS_TYPES.index("total"))
+        players = {p['player_id'] : player_map.get(p['player_id']) for p in rankings[stype]}
+        render.show_radar_charts(players, RATINGS)
+    else:
+        st.write("Please return to Home Page and connect to your league.")
+
+
+# 7. Trade
+with tab7:
     st.header("Trade")
     if st.session_state.league:
-        if st.session_state.my_team:
+        if st.session_state.my_team_id:
             team_map = st.session_state.team_map
             player_map = st.session_state.player_map
             free_agents_map = st.session_state.free_agents_map
-            my_team = st.session_state.my_team
-
-            render.show_trade(my_team, team_map, player_map, free_agents_map, COUNTING_STATS, PERCENTAGE_STATS, 
+            my_team_id = st.session_state.my_team_id
+            render.show_trade(my_team_id, team_map, player_map, free_agents_map, COUNTING_STATS, PERCENTAGE_STATS, 
                               CATEGORIES, CAT_INDEX, MASK, ROSTER_SIZE)
         else:
             st.write("Please return to Home Page and select your team.")
@@ -146,17 +158,17 @@ with tab6:
 
 
 
-# 7. Matchup
-with tab7:
+# 8. Matchup
+with tab8:
     st.header("Matchup")
     if st.session_state.league:
-        if st.session_state.my_team:
+        if st.session_state.my_team_id:
+            league = st.session_state.league
             team_map = st.session_state.team_map
             player_map = st.session_state.player_map
             free_agents_map = st.session_state.free_agents_map
-            my_team = st.session_state.my_team
-
-            st.write("Coming soon......")
+            my_team_id = st.session_state.my_team_id
+            render.show_matchup(team_map, player_map, free_agents_map, my_team_id, league, COUNTING_STATS, PERCENTAGE_STATS)
         else:
             st.write("Please return to Home Page and select your team.")
     else:

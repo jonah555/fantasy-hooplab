@@ -17,10 +17,10 @@ def round_value(cat, val, is_z=False):
     return f"{val:.1f}"
 
 
-def make_h2h_most_df(team_map, my_team_name):
+def make_h2h_most_df(team_map, my_team_id):
     """Return DataFrame showing W-L-T and Win% for each team."""
     rows = []
-    my_team = next(t for t in team_map.values() if t.name == my_team_name)
+    my_team = team_map.get(my_team_id)
 
     for t in team_map.values():
         h2h = t.h2h_most.get("total", {})
@@ -34,7 +34,7 @@ def make_h2h_most_df(team_map, my_team_name):
         }
         if t.team_id != my_team.team_id:
             matchup = my_team.h2h_most.get("total", {}).get(t.team_id, {})
-            result['Result'] = matchup.get('score', '-')
+            result['you vs opp'] = matchup.get('score', '-')
             for cat in CATEGORIES:
                 result[cat] = matchup[cat]
 
@@ -144,20 +144,20 @@ def create_radar(player_name, stats, position):
     return fig
 
 
-def show_players(player_map, team_map, ratings):
-
+def show_radar_charts(players, ratings):
+    
     # Then add a search/filter for radar charts
     st.markdown("### 📊 View Player Radar Chart")
 
     # Dropdown to select player
     selected_player_name = st.selectbox(
         "Select a player to view their radar chart:",
-        options=[p.name for p in player_map.values()],
+        options=[p.name for p in players.values()],
         key="player_select"
     )
 
     # Find the selected player
-    selected_player = next((p for p in player_map.values() if p.name == selected_player_name), None)
+    selected_player = next((p for p in players.values() if p.name == selected_player_name), None)
 
     if selected_player:
         rating = selected_player.ratings['total']
@@ -180,28 +180,52 @@ def show_players(player_map, team_map, ratings):
                     st.metric(cat, ratings.get(rating.get(cat, 0)))
 
 
-    # col1, col2, col3 = st.columns(3)
-    col1, col2 = st.columns(2)
+def show_players(player_map, team_map):
+
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.markdown("### 🧍 Player Stats (total)")
     with col2:
         player_view = st.radio("View:", ["Stats", "Z-Scores"], key="player_view", horizontal=True)
-    # with col3:
-        # team1_name = st.selectbox("stats splits", STATS_TYPES, key="jonah")
+    with col3:
+        punt_cats = st.multiselect(
+            "Select categories to punt:",
+            CATEGORIES,
+            default=[],  # no punting default
+            key="punt_select"
+        )
+    with col4:
+        position_filter = st.multiselect(
+            "Select Positions:",
+            ['PG', 'SG', 'SF', 'PF', 'C'],
+            default=['PG', 'SG', 'SF', 'PF', 'C'],  # no punting default
+            key="pos_select"
+        )
+
+
+    rankings = fantasy.ranking_with_punting(player_map, CATEGORIES, punt_cats)
 
     player_rows = []
-    for p in player_map.values():
+
+    for player in rankings['total']:
+        p = player_map.get(player['player_id'])
+
+        if p.position not in position_filter:
+            continue  # Skip this player if position not selected
+        
         ownership = (
             team_map[p.on_team_id].name if p.on_team_id in team_map
             else ("FA" if p.status == "FREEAGENT" else "WAIVER")
         )
         base = {
+            "Rank" : player['rank'],
             "Name": p.name,
             "Ownership": ownership,
             "Pro Team": p.pro_team,
             "Pos": p.position,
-            "Score": round(p.stats_z["total"].get("score", 0), 2)
+            "Score": round(p.stats_z["total"].get("score", 0), 2),
+            "Punted Score" : round(player['punted_value'], 2)
         }
         cats = CATEGORIES
         src = p.stats_z if player_view == "Z-Scores" else p.stats
@@ -212,7 +236,7 @@ def show_players(player_map, team_map, ratings):
         player_rows.append(base)
 
     player_df = pd.DataFrame(player_rows)
-    st.dataframe(player_df, width='stretch', height=len(player_df) * 35 + 38)
+    st.dataframe(player_df, width='stretch', height=len(player_df) * 35 + 38, hide_index=True)
 
 
 def show_teams(team_map, counting_stats, roster_size, trade):
@@ -238,22 +262,22 @@ def show_teams(team_map, counting_stats, roster_size, trade):
         team_rows.append(base)
 
     team_df = pd.DataFrame(team_rows)
-    st.dataframe(team_df, width='stretch')
+    st.dataframe(team_df, width='stretch', hide_index=True)
 
 
-def show_standings(team_map, my_team):
+def show_standings(team_map, my_team_id):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🏆 League Standings H2H Most")
-        df_most = make_h2h_most_df(team_map, my_team).sort_values("win%", ascending=False)
-        st.dataframe(df_most, width='content')
+        df_most = make_h2h_most_df(team_map, my_team_id).sort_values("win%", ascending=False)
+        st.dataframe(df_most, width='content', hide_index=True)
     with col2:
         st.markdown("### 🏆 League Standings H2H Each")
         df_each = make_h2h_each_df(team_map).sort_values("win%", ascending=False)
-        st.dataframe(df_each, width='content')
+        st.dataframe(df_each, width='content', hide_index=True)
 
 
-def show_roster(team_map, player_map, my_team):
+def show_roster(team_map, player_map, my_team_id, ratings):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🧢 Team Roster Viewer")
@@ -263,7 +287,7 @@ def show_roster(team_map, player_map, my_team):
 
     temp = {t.name: t for t in team_map.values()}
     team_names = list(temp.keys())
-    selected_name = st.selectbox("Select team:", team_names, index=team_names.index(my_team))
+    selected_name = st.selectbox("Select team:", team_names, index=team_names.index(team_map.get(my_team_id).name))
     team = temp[selected_name]
 
     # Choose source
@@ -271,6 +295,7 @@ def show_roster(team_map, player_map, my_team):
     stype = "total"
 
     roster_rows = []
+    players = {}
     for pid in team.roster:
         player = player_map.get(pid)
         if not player:
@@ -291,8 +316,12 @@ def show_roster(team_map, player_map, my_team):
 
         roster_rows.append(base)
 
+        players[pid] = player
+
     roster_df = pd.DataFrame(roster_rows)
     st.dataframe(roster_df, width='stretch', height=len(roster_df) * 35 + 38)
+
+    show_radar_charts(players, ratings)
 
 
 # --- Helper: Compute Totals, Averages, and Differences ---
@@ -374,14 +403,14 @@ def transaction_to_df(player_map, info, mode):
     return pd.DataFrame(rows)
 
 
-def show_trade(my_team, team_map, player_map, free_agents_map, counting_stats, percentage_stats, categories, cat_index, mask, roster_size):
+def show_trade(my_team_id, team_map, player_map, free_agents_map, counting_stats, percentage_stats, categories, cat_index, mask, roster_size):
     st.subheader("💼 Trade Analyzer")
     col1, col2, col3 = st.columns(3)
     # --- Team selectors ---
 
     team_names = [t.name for t in team_map.values()]
     with col1:
-        team1_name = st.selectbox("Select Team 1", team_names, key="trade_team1", index=team_names.index(my_team))
+        team1_name = st.selectbox("Select Team 1", team_names, key="trade_team1", index=team_names.index(team_map.get(my_team_id).name))
 
     with col2:
         team2_name = st.selectbox("Select Team 2", [n for n in team_names if n != team1_name], key="trade_team2")
@@ -466,7 +495,6 @@ def show_trade(my_team, team_map, player_map, free_agents_map, counting_stats, p
                     result["plus"].append(pid)
                 elif team2_name in action:
                     trade_dict[pid] = team2.team_id
-                    result["minus"].append(pid)
 
         st.session_state.trade_result = (result, trade_dict)
 
@@ -523,6 +551,138 @@ def show_trade(my_team, team_map, player_map, free_agents_map, counting_stats, p
             st.dataframe(diff_avg_df, width='content')
 
         st.text("")
-        show_standings(team_map, team1.name)
+        show_standings(team_map, team1.team_id)
         st.text("")
         show_teams(team_map, counting_stats, roster_size, '_t')
+
+
+def show_matchup(team_map, player_map, free_agents_map, my_team_id, league, counting_stats, percentage_stats):
+    
+    matchup_map = fantasy.build_matchup_scoring_period(league)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Select Matchup Teams")
+    with col2:
+        current_matchup_period = st.selectbox(
+            "Select Week:",
+            options=list(matchup_map.keys()),
+            index=list(matchup_map.keys()).index(str(league.currentMatchupPeriod)),
+            key="matchup_week_select"
+        )
+
+    current_matchup_period = int(current_matchup_period)
+    team_names = {t.team_id: t.name for t in team_map.values()}
+    colA, colB = st.columns(2)
+
+    with colA:
+        team1_id = st.selectbox(
+            "Team 1 (Your Team)",
+            options=list(team_names.keys()),
+            index=list(team_names.keys()).index(my_team_id),
+            format_func=lambda tid: team_names[tid],
+            key="matchup_team1_select"
+        )
+
+    # Get matchup opponent by ESPN schedule
+    matchup = team_map[team1_id].schedule[current_matchup_period - 1]
+    opponent_id = matchup.away_team.team_id if matchup.home_team.team_id == team1_id else matchup.home_team.team_id
+
+    with colB:
+        options = list(n for n in team_names.keys() if n != team1_id)
+        team2_id = st.selectbox(
+            "Team 2 (Opponent)",
+            options=options,
+            index=options.index(opponent_id),
+            format_func=lambda tid: team_names[tid],
+            key="matchup_team2_select"
+        )
+
+    team_box_score = fantasy.get_box_score(team1_id, current_matchup_period, team_map)
+    opponent_box_score = fantasy.get_box_score(team2_id, current_matchup_period, team_map)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        df = pd.DataFrame(team_box_score, index=['team'])
+        st.dataframe(df, width=900)
+    with col2:
+        df = pd.DataFrame(opponent_box_score, index = ['opp'])
+        st.dataframe(df, width=900)
+
+    team_games, opponent_games, free_agents_games = fantasy.get_matchup(team1_id, team2_id, current_matchup_period, league, 
+                                                                        team_map, matchup_map, player_map, free_agents_map)
+
+    scoring_period = matchup_map[str(current_matchup_period)]
+
+    DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    day_map = dict(zip(scoring_period, DAY_LABELS))
+
+    def render_checkbox_grid(title, games_dict):
+        st.markdown(f"### {title}")
+
+        rows = []
+        player_ids = list(games_dict.keys())
+
+        # Build empty collection container
+        selected = {pid: [] for pid in player_ids}
+
+        # Header
+        header_cols = st.columns(len(scoring_period) + 1)
+        header_cols[0].markdown("**Player**")
+        for i, day in enumerate(scoring_period):
+            header_cols[i + 1].markdown(f"**{day_map[day]}**")
+
+        # Rows
+        for pid in player_ids:
+            player = player_map.get(pid)
+            row = st.columns(len(scoring_period) + 1)
+            row[0].write(player.name)
+
+            for i, day in enumerate(scoring_period):
+                if day in games_dict[pid]:
+                    team = games_dict[pid][day]["team"]
+                    key = f"{title}_{pid}_{day}"
+                    checked = row[i + 1].checkbox(team, key=key)
+                    if checked:
+                        selected[pid].append(day)
+                else:
+                    row[i + 1].write("-")
+
+        return selected
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        team1_selected = render_checkbox_grid(team_names[team1_id], team_games)
+        # fa_selected_left = render_checkbox_grid("Free Agents (Left)", fa_games_raw)
+
+    with col2:
+        team2_selected = render_checkbox_grid(team_names[team2_id], opponent_games)
+        # fa_selected_right = render_checkbox_grid("Free Agents (Right)", fa_games_raw)
+
+
+    # Merge FA selections into both teams
+    # team1_selected.update(fa_selected_left)
+    # team2_selected.update(fa_selected_right)
+
+
+    # -------------------------------
+    # Run Button
+    # -------------------------------
+    run_btn = st.button("Run Projections", type="primary")
+
+    if run_btn:
+        st.subheader("📊 Matchup Projection Results")
+
+        result, team_projections, opponent_projections = fantasy.analyze_matchup(team1_selected, team2_selected, team_box_score, opponent_box_score, 
+                                                                        CATEGORIES, counting_stats, percentage_stats, player_map)
+
+
+        df = pd.DataFrame(team_projections["total"], index=["team"])
+        st.dataframe(df, width=900)
+
+        df = pd.DataFrame(opponent_projections["total"], index=["opp"])
+        st.dataframe(df, width=900)
+
+
+        df = pd.DataFrame(result["total"], index=["Projected Diff"])
+        st.dataframe(df, width=900)

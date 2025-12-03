@@ -61,13 +61,10 @@ python -m streamlit run src/fantasy_hooplab/main.py
 ### 5. TO DO 
 
 Functional
-1. add a ranking function with punting categories functionality => show players table based on ranking
-2. add position filter using player.eligible_slots
-3. add match up page and utils/fantasy functions
-4. update get_roster because I need to add schedule to all players, now only roster players have schedule
-5. players lost shouldn't have included Free Agents
-6. add ORIGINAL standing projection after trade analysis
-7. add stats splits control, it is only using 2026 season total stats for now
+
+1. add free agents selections for matchup
+2. add ORIGINAL standing projection after trade analysis
+3. add stats splits control, it is only using 2026 season total stats for now
 
 Non Functional
 1. add scaling color from green to no color to red to all stats, green as above avg, red as below avg using z scores
@@ -75,4 +72,4 @@ Non Functional
 3. update categories order
 4. Add Team radar charts
 
-2025/12/1
+2025/12/2
