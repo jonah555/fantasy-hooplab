@@ -597,16 +597,19 @@ def show_matchup(team_map, player_map, free_agents_map, my_team_id, league, coun
             key="matchup_team2_select"
         )
 
-    team_box_score = fantasy.get_box_score(team1_id, current_matchup_period, team_map)
-    opponent_box_score = fantasy.get_box_score(team2_id, current_matchup_period, team_map)
+    team_box_score = {}
+    opponent_box_score = {}
+    if current_matchup_period <= league.currentMatchupPeriod:
+        team_box_score = fantasy.get_box_score(team1_id, current_matchup_period, team_map)
+        opponent_box_score = fantasy.get_box_score(team2_id, current_matchup_period, team_map)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        df = pd.DataFrame(team_box_score, index=['team'])
-        st.dataframe(df, width=900)
-    with col2:
-        df = pd.DataFrame(opponent_box_score, index = ['opp'])
-        st.dataframe(df, width=900)
+        col1, col2 = st.columns(2)
+        with col1:
+            df = pd.DataFrame(team_box_score, index=['team'])
+            st.dataframe(df, width=900)
+        with col2:
+            df = pd.DataFrame(opponent_box_score, index = ['opp'])
+            st.dataframe(df, width=900)
 
     team_games, opponent_games, free_agents_games = fantasy.get_matchup(team1_id, team2_id, current_matchup_period, league, 
                                                                         team_map, matchup_map, player_map, free_agents_map)
