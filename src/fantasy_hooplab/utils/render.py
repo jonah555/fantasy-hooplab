@@ -321,7 +321,7 @@ def show_roster(team_map, player_map, my_team_id, ratings):
     roster_df = pd.DataFrame(roster_rows)
     st.dataframe(roster_df, width='stretch', height=len(roster_df) * 35 + 38)
 
-    show_radar_charts(players, ratings)
+    # show_radar_charts(players, ratings)
 
 
 # --- Helper: Compute Totals, Averages, and Differences ---
