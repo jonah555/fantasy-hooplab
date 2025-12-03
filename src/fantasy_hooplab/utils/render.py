@@ -191,7 +191,6 @@ def show_players(player_map, team_map):
         ownderships = ['All', 'Free Agents']
         for t in team_map.values():
             ownderships.append(t.name)
-        ownderships.append("Free Agents")
         ownership_filter = st.selectbox(
             "Ownership:",
             ownderships,
