@@ -62,7 +62,7 @@ python -m streamlit run src/fantasy_hooplab/main.py
 
 Functional
 
-1. add free agents selections for matchup
+1. add select all or clear all for matchup
 2. add ORIGINAL standing projection after trade analysis
 3. add stats splits control, it is only using 2026 season total stats for now
 4. make sure it is not crashing with different league ID
