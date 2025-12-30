@@ -194,7 +194,7 @@ def show_players(player_map, team_map):
         ownership_filter = st.selectbox(
             "Ownership:",
             ownderships,
-            index=ownderships.index('All'),  # no punting default
+            index=ownderships.index('All'),
             key="ownership_filter"
         )
     with col3:
@@ -573,19 +573,83 @@ def show_trade(my_team_id, team_map, player_map, free_agents_map, counting_stats
         show_teams(team_map, counting_stats, roster_size, '_t')
 
 
-def show_matchup(team_map, player_map, free_agents_map, my_team_id, league, counting_stats, percentage_stats):
+# --- Helper: Render Checkbox Grid for Game Selection ---
+def render_checkbox_grid(title, games_dict, scoring_period, day_map, player_map):
+    st.markdown(f"### {title}")
+
+    rows = []
+    player_ids = list(games_dict.keys())
+
+    # Build empty collection container
+    selected = {pid: [] for pid in player_ids}
+
+    # Header
+    header_cols = st.columns(len(scoring_period) + 1)
+    header_cols[0].markdown("**Player**")
+    for i, day in enumerate(scoring_period):
+        header_cols[i + 1].markdown(f"**{day_map[day]}**")
+
+    # Rows
+    for pid in player_ids:
+        player = player_map.get(pid)
+        row = st.columns(len(scoring_period) + 1)
+        row[0].write(player.name)
+
+        for i, day in enumerate(scoring_period):
+            if day in games_dict[pid]:
+                team = games_dict[pid][day]["team"]
+                key = f"{title}_{pid}_{day}"
+                checked = row[i + 1].checkbox(team, key=key)
+                if checked:
+                    selected[pid].append(day)
+            else:
+                row[i + 1].write("-")
+
+    return selected
+
+# --- Helper: Update Free Agents Selection for Matchup ---
+def update_free_agents_selection():
+        """Calculates the new selection and updates st.session_state."""
+        # Ensure the required data exists (this assumes top_fa_data is already saved)
+        if st.session_state.top_fa_data is None:
+            return
+            
+        top_fa = st.session_state.top_fa_data
+
+        # Calculate the IDs to be added
+        new_player_ids = [player['player_id'] for player in top_fa['total'][:10]]
+        
+        # Get the current list from session state
+        current_selection = st.session_state.free_agents_input
+        
+        # Combine and deduplicate
+        updated_selection = list(set(current_selection + new_player_ids))
+        
+        # WRITE THE NEW VALUE BACK TO SESSION STATE SAFELY
+        st.session_state.free_agents_input = updated_selection
+        
+        # Note: No need for st.rerun() here, as the button click naturally triggers a rerun
+
+
+def show_matchup(team_map, player_map, free_agents_map, my_team_id, league, counting_stats, percentage_stats, all_categories):
     
     matchup_map = fantasy.build_matchup_scoring_period(league)
+
+    # --- 1. Matchup Selection
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Select Matchup Teams")
     with col2:
-        current_matchup_period = st.selectbox(
-            "Select Week:",
-            options=list(matchup_map.keys()),
-            index=list(matchup_map.keys()).index(str(league.currentMatchupPeriod)),
-            key="matchup_week_select"
-        )
+        cola, colb = st.columns(2)
+        with cola:
+            current_matchup_period = st.selectbox(
+                "Select Week:",
+                options=list(matchup_map.keys()),
+                index=list(matchup_map.keys()).index(str(league.currentMatchupPeriod)),
+                key="matchup_week_select"
+            )
+        with colb:
+            st.write("")
 
     current_matchup_period = int(current_matchup_period)
     team_names = {t.team_id: t.name for t in team_map.values()}
@@ -600,8 +664,7 @@ def show_matchup(team_map, player_map, free_agents_map, my_team_id, league, coun
             key="matchup_team1_select"
         )
 
-    # Get matchup opponent by ESPN schedule
-    matchup = team_map[team1_id].schedule[current_matchup_period - 1]
+    matchup = team_map[team1_id].schedule[current_matchup_period - 1] # Get matchup opponent by ESPN schedule
     opponent_id = matchup.away_team.team_id if matchup.home_team.team_id == team1_id else matchup.home_team.team_id
 
     with colB:
@@ -614,11 +677,14 @@ def show_matchup(team_map, player_map, free_agents_map, my_team_id, league, coun
             key="matchup_team2_select"
         )
 
+    
+
+    # --- 2. Roster Selection ---
     team_box_score = {}
     opponent_box_score = {}
     if current_matchup_period <= league.currentMatchupPeriod:
-        team_box_score = fantasy.get_box_score(team1_id, current_matchup_period, team_map)
-        opponent_box_score = fantasy.get_box_score(team2_id, current_matchup_period, team_map)
+        team_box_score = fantasy.get_box_score(team1_id, current_matchup_period, team_map, all_categories)
+        opponent_box_score = fantasy.get_box_score(team2_id, current_matchup_period, team_map, all_categories)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -628,81 +694,145 @@ def show_matchup(team_map, player_map, free_agents_map, my_team_id, league, coun
             df = pd.DataFrame(opponent_box_score, index = ['opp'])
             st.dataframe(df, width=900)
 
-    team_games, opponent_games, free_agents_games = fantasy.get_matchup(team1_id, team2_id, current_matchup_period, league, 
-                                                                        team_map, matchup_map, player_map, free_agents_map)
-
-    scoring_period = matchup_map[str(current_matchup_period)]
-
-    DAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
-    day_map = dict(zip(scoring_period, DAY_LABELS))
-
-    def render_checkbox_grid(title, games_dict):
-        st.markdown(f"### {title}")
-
-        rows = []
-        player_ids = list(games_dict.keys())
-
-        # Build empty collection container
-        selected = {pid: [] for pid in player_ids}
-
-        # Header
-        header_cols = st.columns(len(scoring_period) + 1)
-        header_cols[0].markdown("**Player**")
-        for i, day in enumerate(scoring_period):
-            header_cols[i + 1].markdown(f"**{day_map[day]}**")
-
-        # Rows
-        for pid in player_ids:
-            player = player_map.get(pid)
-            row = st.columns(len(scoring_period) + 1)
-            row[0].write(player.name)
-
-            for i, day in enumerate(scoring_period):
-                if day in games_dict[pid]:
-                    team = games_dict[pid][day]["team"]
-                    key = f"{title}_{pid}_{day}"
-                    checked = row[i + 1].checkbox(team, key=key)
-                    if checked:
-                        selected[pid].append(day)
-                else:
-                    row[i + 1].write("-")
-
-        return selected
+    scoring_period = matchup_map.get(str(current_matchup_period))
+    today = league.scoringPeriodId
+    team_games = fantasy.count_games(team_map.get(team1_id).roster, player_map, scoring_period, today)
+    opponent_games = fantasy.count_games(team_map.get(team2_id).roster, player_map, scoring_period, today)
+    
+    day_map = dict(zip(scoring_period, ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]))
 
     col1, col2 = st.columns(2)
 
     with col1:
-        team1_selected = render_checkbox_grid(team_names[team1_id], team_games)
-        # fa_selected_left = render_checkbox_grid("Free Agents (Left)", fa_games_raw)
+        team1_selected = render_checkbox_grid(team_names[team1_id], team_games, scoring_period, day_map, player_map)
 
     with col2:
-        team2_selected = render_checkbox_grid(team_names[team2_id], opponent_games)
-        # fa_selected_right = render_checkbox_grid("Free Agents (Right)", fa_games_raw)
+        team2_selected = render_checkbox_grid(team_names[team2_id], opponent_games, scoring_period, day_map, player_map)
 
 
-    # Merge FA selections into both teams
-    # team1_selected.update(fa_selected_left)
-    # team2_selected.update(fa_selected_right)
+
+    # --- 3. Free Agents Section ---
+    if 'free_agents_input' not in st.session_state:
+        st.session_state.free_agents_input = []
+
+    if "fa_games" not in st.session_state:
+        st.session_state.fa_games = {}
+
+    if "fa_selected_left" not in st.session_state:
+        st.session_state.fa_selected_left = {}
+
+    if "fa_selected_right" not in st.session_state:
+        st.session_state.fa_selected_right = {}
+
+    if "top_fa_data" not in st.session_state:
+        st.session_state.top_fa_data = None # Store the top_fa result here
+    
+    col1, col2 = st.columns([9, 1])
+
+    with col1:
+        free_agents_input = st.multiselect(
+                "Select Free Agents to show:",
+                free_agents_map.keys(),
+                key="free_agents_input",
+                format_func=lambda name: free_agents_map[name].name
+        )
+    with col2:
+        refresh_btn = st.button("Refresh Free Agents")
 
 
-    # -------------------------------
-    # Run Button
-    # -------------------------------
+    if refresh_btn:
+        st.session_state.fa_games = fantasy.count_games(free_agents_input, player_map, scoring_period, today)
+        st.session_state.fa_selected_left = {pid: [] for pid in st.session_state.fa_games}
+        st.session_state.fa_selected_right = {pid: [] for pid in st.session_state.fa_games}
+    
+    if st.session_state.fa_games:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.session_state.fa_selected_left = render_checkbox_grid("Free Agents (My Team)", st.session_state.fa_games, 
+                                                                     scoring_period, day_map, player_map)
+
+        with col2:
+            st.session_state.fa_selected_right = render_checkbox_grid("Free Agents (Opponent)", st.session_state.fa_games, 
+                                                                      scoring_period, day_map, player_map)
+
+
+
+    # 4. --- Run Projection Button ---
+    if "matchup_proj" not in st.session_state:
+        st.session_state.matchup_proj = {}
+    
     run_btn = st.button("Run Projections", type="primary")
+    st.write("")
 
     if run_btn:
-        st.subheader("📊 Matchup Projection Results")
 
-        result, team_projections, opponent_projections = fantasy.analyze_matchup(team1_selected, team2_selected, team_box_score, opponent_box_score, 
-                                                                        CATEGORIES, counting_stats, percentage_stats, player_map)
+        # Merge FA selections into both teams
+        if st.session_state.fa_selected_left:
+            team1_selected.update(st.session_state.fa_selected_left)
+        if st.session_state.fa_selected_right:
+            team2_selected.update(st.session_state.fa_selected_right)
+
+        team_games = {pid: days for pid, days in team1_selected.items() if len(days) > 0}
+        opponent_games = {pid: days for pid, days in team2_selected.items() if len(days) > 0}
+
+        result, team_projections, opponent_projections = fantasy.analyze_matchup(team_games, opponent_games, team_box_score, opponent_box_score, 
+                                                                                 all_categories, counting_stats, percentage_stats, player_map)
+
+        st.session_state.matchup_proj = (result, team_projections, opponent_projections)
+
+    if st.session_state.matchup_proj:
+        
+        result, team_projections, opponent_projections = st.session_state.matchup_proj
+        col1, col2 = st.columns(2)
+        with col1:
+
+            st.subheader("📊 Matchup Projection Results")
+            df = pd.DataFrame(team_projections["total"], index=["team"])
+            st.dataframe(df, width='content')
+
+            df = pd.DataFrame(opponent_projections["total"], index=["opp"])
+            st.dataframe(df, width='content')
 
 
-        df = pd.DataFrame(team_projections["total"], index=["team"])
-        st.dataframe(df, width=900)
-
-        df = pd.DataFrame(opponent_projections["total"], index=["opp"])
-        st.dataframe(df, width=900)
+            df = pd.DataFrame(result["total"], index=["diff"])
+            st.dataframe(df, width='content')
 
 
-        df = pd.DataFrame(result["total"], index=["Projected Diff"])
-        st.dataframe(df, width=900)
+        # --- 5. Free Agents Reccommendation ---
+        with col2:
+            cats_won = []
+            for cat in CATEGORIES:
+                if cat == "TO":
+                    if result['total'][cat] <= 0:
+                        cats_won.append(cat)
+                elif result['total'][cat] >= 0:
+                    cats_won.append(cat)
+            
+            target_cats = st.multiselect("Select Categories to Boost:", CATEGORIES, default=cats_won, key="target_cats")
+                        
+            
+            cola, colb = st.columns(2)
+            with cola:
+                top_fa_btn = st.button("Show top Free Agents")
+
+            if top_fa_btn:
+                punting_cats = [cat for cat in CATEGORIES if cat not in target_cats]
+                top_fa = fantasy.ranking_with_punting(free_agents_map, CATEGORIES, punting_cats)
+
+                st.session_state.top_fa_data = top_fa
+                st.rerun()
+            
+
+            if st.session_state.top_fa_data is not None:
+                top_fa = st.session_state.top_fa_data
+                for player in top_fa['total'][:10]:
+                    p_obj = free_agents_map.get(player['player_id'])
+                    st.markdown(f"**{p_obj.name}** - Punted Score: {round(player['punted_value'], 2)}")
+                    df = pd.DataFrame([p_obj.stats['total']], columns=all_categories)
+                    st.dataframe(df.round(2), width='content', hide_index=True)
+
+                with colb:
+                    append_top_fa_btn = st.button(
+                        "Add top Free Agents to above",
+                        on_click=update_free_agents_selection
+                    )

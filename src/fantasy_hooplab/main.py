@@ -10,6 +10,7 @@ TEAM_COUNT = 10
 CATEGORIES = ["FG%", "FT%", "3PM", "REB", "AST", "STL", "BLK", "TO", "PTS"]
 CAT_INDEX = np.arange(len(CATEGORIES))
 COUNTING_STATS = ["PTS", "3PM", "REB", "AST", "STL", "BLK", "TO", "FGM", "FGA", "FTM", "FTA"]
+ALL_CATEGORIES = ["PTS", "3PM", "REB", "AST", "STL", "BLK", "TO", "FG%", "FT%", "FGM", "FGA", "FTM", "FTA"]
 PERCENTAGE_STATS = ["FG", "FT"]
 NEGATIVE_STATS = ["TO"]
 MASK = np.array([cat in NEGATIVE_STATS for cat in CATEGORIES])
@@ -168,7 +169,7 @@ with tab8:
             player_map = st.session_state.player_map
             free_agents_map = st.session_state.free_agents_map
             my_team_id = st.session_state.my_team_id
-            render.show_matchup(team_map, player_map, free_agents_map, my_team_id, league, COUNTING_STATS, PERCENTAGE_STATS)
+            render.show_matchup(team_map, player_map, free_agents_map, my_team_id, league, COUNTING_STATS, PERCENTAGE_STATS, ALL_CATEGORIES)
         else:
             st.write("Please return to Home Page and select your team.")
     else:

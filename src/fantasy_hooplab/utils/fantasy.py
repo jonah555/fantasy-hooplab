@@ -216,13 +216,11 @@ def build_matchup_scoring_period(league, all_star_week=17):
     return matchup_map 
 
 
-def get_box_score(team_id, current_matchup_period, team_map):
+def get_box_score(team_id, current_matchup_period, team_map, all_categories):
 
     my_team = team_map.get(team_id)
     matchup = my_team.schedule[current_matchup_period - 1] # my_team.schedule starts index 0
     
-    
-    all_categories = matchup.home_team_cats.keys()
     box_score = {cat : 0 for cat in all_categories}
 
     home = team_id == matchup.home_team.team_id
@@ -248,16 +246,6 @@ def count_games(players, player_map, scoring_period, today):
     return games
 
 
-def get_matchup(team_id, opponent_id, current_matchup_period, league, team_map, matchup_map, player_map, free_agents_map):
-    scoring_period = matchup_map.get(f'{current_matchup_period}')
-    today = league.scoringPeriodId
-    team_games = count_games(team_map.get(team_id).roster, player_map, scoring_period, today)
-    opponent_games = count_games(team_map.get(opponent_id).roster, player_map, scoring_period, today)
-    free_agents_games = count_games(free_agents_map, player_map, scoring_period, today)
-
-    return team_games, opponent_games, free_agents_games
-
-
 def sum_projections(games, box_score, counting_stats, percentage_stats, player_map):
     # helper
     projections = {stype : box_score.copy() for stype in STATS_TYPES}
@@ -279,16 +267,24 @@ def sum_projections(games, box_score, counting_stats, percentage_stats, player_m
     return projections
 
 
-def analyze_matchup(team_games, opponent_games, team_box_score, opponent_box_score, categories, counting_stats, percentage_stats, player_map):
+def analyze_matchup(team_games, opponent_games, team_box_score, opponent_box_score, all_categories, counting_stats, percentage_stats, player_map):
 
     team_projections = sum_projections(team_games, team_box_score, counting_stats, percentage_stats, player_map)
     opponent_projections = sum_projections(opponent_games, opponent_box_score, counting_stats, percentage_stats, player_map)
 
-    result = {stype: {cat: 0 for cat in categories} for stype in STATS_TYPES}
+    result = {stype: {cat: 0 for cat in all_categories} for stype in STATS_TYPES}
 
     for stype in STATS_TYPES:
-        for cat in categories:
+        for cat in all_categories:
             result[stype][cat] = team_projections[stype][cat] - opponent_projections[stype][cat]
+            if cat in counting_stats:
+                result[stype][cat] = round(result[stype][cat], 0)
+                team_projections[stype][cat] = round(team_projections[stype][cat], 0)
+                opponent_projections[stype][cat] = round(opponent_projections[stype][cat], 0)
+            else:
+                result[stype][cat] = round(result[stype][cat], 4)
+                team_projections[stype][cat] = round(team_projections[stype][cat], 4)
+                opponent_projections[stype][cat] = round(opponent_projections[stype][cat], 4)
 
     return result, team_projections, opponent_projections
 
