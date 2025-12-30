@@ -65,6 +65,7 @@ Functional
 1. add free agents selections for matchup
 2. add ORIGINAL standing projection after trade analysis
 3. add stats splits control, it is only using 2026 season total stats for now
+4. make sure it is not crashing with different league ID
 
 Non Functional
 1. add scaling color from green to no color to red to all stats, green as above avg, red as below avg using z scores
@@ -72,4 +73,4 @@ Non Functional
 3. update categories order
 4. Add Team radar charts
 
-2025/12/2
+2025/12/29
